@@ -1,0 +1,86 @@
+from N_P.newspapper.models import Author
+
+python3 manage.py shell
+
+from django.contrib.auth.models import User
+from django.db import models
+from newspapper.models import *
+
+
+#  Создать двух пользователей (с помощью метода User.objects.create_user)
+User.objects.create_user(username='Максим Горький', password='asdf')
+User.objects.create_user(username='Марк Твен', password='zxcv')
+
+# Создать два объекта модели Author, связанные с пользователями
+Author.objects.create(author=User.objects.get(id=4))
+Author.objects.create(author=User.objects.get(id=5))
+
+# Добавить 4 категории в модель Category.
+Category.objects.create(name='Гороскопы')
+Category.objects.create(name='Здоровье')
+Category.objects.create(name='Огород')
+Category.objects.create(name='Политика')
+
+# Добавить 2 статьи и 1 новость
+Post.objects.create(author=Author.objects.get(id=4), type = 'AR',
+                    header= 'Сатурн в Венере',
+                    article_text='Пора копать кортошку')
+
+Post.objects.create(author=Author.objects.get(id=4), type = 'AR',
+                    header= 'Не ешьте на ночь',
+                    article_text='Плохо будете спать.')
+
+Post.objects.create(author=Author.objects.get(id=5), type = 'NW',
+                    header= 'Доллар по 30!',
+                    article_text='Наконец-то дождались теперь можно купить доллар по 30 тыс. рублей за доллар!')
+
+
+# Присвоить им категории
+# (как минимум в одной статье/новости должно быть не меньше 2 категорий).
+post = Post.objects.get(id=3)
+post.category.add(Category.objects.get(id=1))
+
+cat = Category.objects.get(id=2)
+PostCategory.objects.create(post=post, category=cat)
+
+# Создать как минимум 4 комментария к разным объектам модели Post (в каждом объекте должен быть как минимум один комментарий).
+author = User.objects.get(id=10)
+post = Post.objects.get(id=11)
+Comment.objects.create(post=post, author=author, text='Комментарием Пост')
+
+#  like() комментариям
+comments = Comment.objects.all()
+comments[3].like()
+
+#  dislike() комментариям
+comments = Comment.objects.all()
+comments[2].dislike()
+
+# like() поста
+post.like()
+
+# dislike() поста
+post.dislike()
+
+#  скорректировать рейтинги этих объектов
+post.post_raiting = -8
+post.save()
+
+# Обновить рейтинги пользователей
+for auth in Author.objects.all():
+    auth.update_raiting()
+
+# Вывести username и рейтинг лучшего пользователя (применяя сортировку и возвращая поля первого объекта).
+Author.objects.all().order_by('-author_raiting').values('author__username','author_raiting')[0]
+
+# Вывести дату добавления, username автора, рейтинг, заголовок и превью лучшей статьи, основываясь на лайках/дислайках к этой статье.
+super = Post.objects.all().order_by('-post_raiting')[0]
+super_post = Post.objects.all().order_by('-post_raiting').values(
+    'created_time',
+    'author__author__username',
+    'header', 'post_raiting',
+    'article_text')[0]
+super.preview()
+
+# Вывести все комментарии (дата, пользователь, рейтинг, текст) к этой статье
+Comment.objects.filter(post=super).values('author__username', 'created_time', 'text')
